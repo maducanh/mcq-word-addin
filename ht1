@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="https://appsforoffice.microsoft.com/lib/1/office.js"></script>
+  <script src="commands.js"></script>
+</head>
+<body></body>
+</html>
+Office.onReady(() => {});
+
+async function alignAllAnswers() {
+  await Word.run(async (context) => {
+
+    const paras = context.document.body.paragraphs;
+    paras.load("text");
+    await context.sync();
+
+    const SHORT = 30;
+    const LONG = 80;
+
+    for (let i = 0; i < paras.items.length - 3; i++) {
+      const A = paras.items[i];
+      const B = paras.items[i + 1];
+      const C = paras.items[i + 2];
+      const D = paras.items[i + 3];
+
+      if (!A.text.trim().startsWith("A.") ||
+          !B.text.trim().startsWith("B.") ||
+          !C.text.trim().startsWith("C.") ||
+          !D.text.trim().startsWith("D.")) continue;
+
+      const a = A.text.substring(2).trim();
+      const b = B.text.substring(2).trim();
+      const c = C.text.substring(2).trim();
+      const d = D.text.substring(2).trim();
+
+      const maxLen = Math.max(a.length, b.length, c.length, d.length);
+
+      if (maxLen < SHORT) {
+        A.insertText(`\tB. ${b}\tC. ${c}\tD. ${d}`, Word.InsertLocation.end);
+        B.delete(); C.delete(); D.delete();
+        A.paragraphFormat.alignment = "Justified";
+        i += 3;
+      }
+      else if (maxLen < LONG) {
+        A.insertText(`\tB. ${b}`, Word.InsertLocation.end);
+        B.delete();
+
+        C.insertText(`\tD. ${d}`, Word.InsertLocation.end);
+        D.delete();
+
+        A.paragraphFormat.alignment = "Justified";
+        C.paragraphFormat.alignment = "Justified";
+        i += 3;
+      }
+      else {
+        A.paragraphFormat.alignment = "Left";
+        B.paragraphFormat.alignment = "Left";
+        C.paragraphFormat.alignment = "Left";
+        D.paragraphFormat.alignment = "Left";
+        i += 3;
+      }
+    }
+
+    await context.sync();
+    Office.context.ui.displayDialogAsync(
+      "about:blank",
+      { height: 20, width: 20 },
+      () => alert("✅ Đã căn chỉnh xong toàn bộ đáp án!")
+    );
+  });
+}
